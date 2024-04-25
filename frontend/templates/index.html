@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconhecimento de Escrita</title>
+    <!-- Adicionando o Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: sans-serif;
+            padding-top: 50px; /* Espaço para o navbar */
+        }
+        #canvasContainer {
+            text-align: center;
+            position: relative;
+            margin-top: 50px; /* Espaço para o navbar */
+        }
+        #canvasBackground, #canvas {
+            border: 1px solid black;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #canvasBackground {
+            pointer-events: none;
+        }
+        #canvas {
+            margin: 0 auto; /* Centralizar o canvas horizontalmente */
+            display: block; /* Garantir que o canvas ocupe a largura necessária */
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">Reconhecimento de Escrita</a>
+        </div>
+    </nav>
+    <div class="container mt-5" id="canvasContainer">
+        <h1>Olá</h1>
+        <p>Escreva a palavra: <strong>{{ palavra }}</strong></p>
+        <div class="slidecontainer">
+            <input type="range" min="1" max="4" value="2" class="slider" id="myRange">
+        </div>
+        <div style="position: relative;">
+            <canvas id="canvasBackground" width="{{ tamanho * 40 }}" height="50"></canvas>
+            <canvas id="canvas" width="{{ tamanho * 40 }}" height="50"></canvas>
+        </div>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <input type="checkbox" id="borracha">
+        <label for="borracha">Borracha</label><br>
+        <button class="btn btn-primary" onclick="enviarDesenho()">Enviar</button>
+        <button class="btn btn-primary" onclick="location.reload()">Recarregar</button>
+        <button class="btn btn-primary" onclick="limparCanvas()">Limpar</button>
+    </div>
+    <!-- Adicionando o Bootstrap JS e o jQuery para funcionalidades -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Função para limpar o canvas
+        function limparCanvas() {
+            const canvas = document.getElementById("canvas");
+            const context = canvas.getContext("2d");
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        //obter a grossura a partir do slider
+        var slider = document.getElementById("myRange");
+        //obter o valor do slider
+        var valor = slider.value;
+        //atualizar o valor do slider
+        slider.oninput = function() {
+            console.log(this.value);
+            valor = this.value;
+            context.lineWidth = valor; 
+        }
+        const canvas = document.getElementById("canvas");
+
+        const canvasBackground = document.getElementById("canvasBackground");
+        const contextBackground = canvasBackground.getContext("2d");
+        const context = canvas.getContext("2d");
+        //atualiza a grossura do traço
+        context.lineWidth = valor; 
+
+        const palavra = "{{ palavra }}";
+        //background do canvas principal branco
+        // context.fillRect(0, 0, canvas.width, canvas.height);
+        //background do canvas de fundo preto
+        // contextBackground.fillStyle = "white";
+
+        // Definir as demarcações para cada letra da palavra
+        const letraWidth = canvasBackground.width / palavra.length;
+        for (let i = 0; i < palavra.length + 1; i++) {
+            const x = i * letraWidth;
+            contextBackground.beginPath();
+            contextBackground.moveTo(x, 0);
+            contextBackground.lineTo(x, canvasBackground.height);
+            contextBackground.strokeStyle = "rgb(0, 0, 255)"; 
+            contextBackground.stroke();
+        }
+
+        // Variáveis para guardar o estado do desenho
+        let desenhando = false;
+        let ultimoX = 0;
+        let ultimoY = 0;
+        let borrachaAtivada = false;
+
+        // Evento para alternar a borracha
+        const borrachaCheckbox = document.getElementById("borracha");
+        borrachaCheckbox.addEventListener("change", () => {
+            borrachaAtivada = borrachaCheckbox.checked;
+        });
+
+        // Eventos para desenhar no canvas
+        canvas.addEventListener("mousedown", (evento) => {
+            desenhando = true;
+            const x = evento.offsetX;
+            const y = evento.offsetY;
+            ultimoX = x;
+            ultimoY = y;
+            context.beginPath();
+            context.moveTo(x, y);
+        });
+
+        canvas.addEventListener("mousemove", (evento) => {
+            if (desenhando) {
+                const x = evento.offsetX;
+                const y = evento.offsetY;
+                context.lineTo(x, y);
+                context.strokeStyle = borrachaAtivada ? "white" : "black"; // Define a cor com base na borracha
+                context.stroke();
+                ultimoX = x;
+                ultimoY = y;
+            }
+        });
+        canvas.addEventListener("mouseup", () => {
+            desenhando = false;
+        });
+        canvas.addEventListener("mouseout", () => {
+            desenhando = false;
+        });
+
+
+        // Função para enviar o desenho
+        function enviarDesenho() {
+            //adicione um fundo branco a imagemBase64
+            const canvasTemp = document.createElement("canvas");
+            canvasTemp.width = canvas.width;
+            canvasTemp.height = canvas.height;
+            const contextTemp = canvasTemp.getContext("2d");
+            contextTemp.fillStyle = "white";
+            contextTemp.fillRect(0, 0, canvasTemp.width, canvasTemp.height);
+            contextTemp.drawImage(canvas, 0, 0);
+            const imagemBase64 = canvasTemp.toDataURL();
+
+            console.log(imagemBase64);
+            console.log(palavra);
+            fetch("/verificar", {
+                method: "POST",
+                body: JSON.stringify({ imagem: imagemBase64, palavra: palavra }),
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.text())
+            .then(texto => alert(texto));
+
+        }
+    </script>
+</body>
+</html>
