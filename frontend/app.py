@@ -17,36 +17,30 @@ with open("palavras.txt", "r", encoding="utf-8") as arquivo:
     texto = arquivo.read()
     # Separar as palavras individualmente
     palavras = texto.split()
-    print(palavras)
-    # mapeie quais palavras ja foram usadas e quais nao
-    
 
 
+# Função para gerar palavra aleatória
 
-# Variável para controlar o índice da palavra atual
-
-
-# Função para gerar palavra linearmente
 def gerar_palavra():
-    palavras_usadas = [False] * len(palavras)
-    # use o conteudo da pasta imagens para saber quais palavras ja foram usadas
-    for arquivo in os.listdir("imagens"):
-        if arquivo.startswith("imagem_"):
-            index_palavra = int(arquivo.split("_")[1].split(".")[0])
-            palavras_usadas[index_palavra] = True
+    # Criar uma lista com os índices das palavras que não foram utilizadas ainda baseado nas imagens dentro da pasta ./imagens
     
-        
-    print(palavras_usadas)
-    # Verificar a primeira palavra que não foi usada ainda
-    for index, usada in enumerate(palavras_usadas):
-        if not usada:
-            print("Palavra gerada:", palavras[index])
-            print("Indice da palavra:", index)
-            return palavras[index]
-    return "Todas as palavras foram usadas"
+    indices_nao_utilizados = [i for i in range(len(palavras)) if not os.path.exists(f"imagens/imagem_{i}.png")]
+    print(indices_nao_utilizados)
+    # Verificar se há índices não utilizados
+    if indices_nao_utilizados:
+        # Escolher aleatoriamente um índice não utilizado
+        index_palavra = random.choice(indices_nao_utilizados)
+        # Remover o índice escolhido da lista de não utilizados
+        indices_nao_utilizados.remove(index_palavra)
+        # Obter a palavra correspondente ao índice escolhido
+        palavra = palavras[index_palavra]
+        print(index_palavra)
+        nome_arquivo = f"imagem_{index_palavra}.png"
 
-
-    
+        return palavra
+    else:
+        # Caso todos os índices tenham sido utilizados, retornar None ou outra indicação
+        return None
     
 
 # Função para verificar palavra com OCR
@@ -56,7 +50,8 @@ def verificar_palavra(imagem, palavra_correta):
     print(texto_ocr)
     
     # Armazenar a imagem em um arquivo PNG na pasta ./imagens
-    
+    nome_arquivo = "imagem_ocr.png"
+    imagem.save(f"./imagens/{nome_arquivo}")
 
     # Verificar se a palavra correta está no texto OCR
     if palavra_correta in texto_ocr:
@@ -72,7 +67,7 @@ app = Flask(__name__)
 def index():
     palavra = gerar_palavra()
     tamanho = len(palavra)
-    return render_template("./index.html", palavra=palavra, tamanho=tamanho)
+    return render_template("./index.html", palavra=palavra, tamanho=tamanho, index_palavra=palavras.index(palavra) )
 
 @app.route("/verificar", methods=["POST"])
 def verificar():
@@ -82,8 +77,6 @@ def verificar():
     palavra_correta = request.get_json()["palavra"]
     if verificar_palavra(imagem, palavra_correta):
         index_palavra = palavras.index(palavra_correta)
-        print("Palavra correta")
-        print("Indice da palavra:", index_palavra)
         # Salvar a imagem em um arquivo PNG
         nome_arquivo = f"imagem_{index_palavra}.png"
         imagem.save(f"imagens/{nome_arquivo}")
@@ -92,17 +85,6 @@ def verificar():
         imagem = cv2.cvtColor(np.array(imagem), cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(imagem, cv2.COLOR_BGR2GRAY)
         _, threshold = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        contours, _ = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        for contour in contours:
-            x, y, w, h = cv2.boundingRect(contour)
-            # cv2.rectangle(imagem, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cropped_image = imagem[y:y+h, x:x+w]
-            padded_image = cv2.copyMakeBorder(cropped_image, 10, 10, 10, 10, cv2.BORDER_CONSTANT, value=(255, 255, 255))
-            print("Dimensões da região original:", h, "x", w)
-
-            # cv2.rectangle(imagem, (x, y), (x + w, y + h), (0, 0, 0), -1)
-            # padded_image_resized = cv2.resize(padded_image, (w, h))
-            # imagem[y:y+h, x:x+w] = padded_image_resized
         imagem = Image.fromarray(cv2.cvtColor(imagem, cv2.COLOR_BGR2RGB))
         
         imagem.save(f"imagens/{nome_arquivo}")

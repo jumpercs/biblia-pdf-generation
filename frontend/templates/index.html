@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reconhecimento de Escrita</title>
+    <title>Reconhecimento de Escrita </title>
     <!-- Adicionando o Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -40,13 +40,14 @@
     </nav>
     <div class="container mt-5" id="canvasContainer">
         <h1>Olá</h1>
-        <p>Escreva a palavra: <strong>{{ palavra }}</strong></p>
+        <p>Escreva a palavra: <strong>{{ palavra }} </strong></p>
+        <p><strong>index: {{index_palavra}}</strong></p>
         <div class="slidecontainer">
             <input type="range" min="1" max="4" value="2" class="slider" id="myRange">
         </div>
         <div style="position: relative;">
-            <canvas id="canvasBackground" width="{{ tamanho * 40 }}" height="50"></canvas>
-            <canvas id="canvas" width="{{ tamanho * 40 }}" height="50"></canvas>
+            <canvas id="canvasBackground" width="{{ tamanho * 40 }}" height="100"></canvas>
+            <canvas id="canvas" width="{{ tamanho * 40 }}" height="100"></canvas>
         </div>
         <br>
         <br>

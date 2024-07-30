@@ -10,7 +10,7 @@ for page_num in range(len(doc)):
     page = doc[page_num]
     words = page.get_text("words")
     words.sort(key=lambda w: (w[3], w[0]))
-    image_folder = "./genesis"
+    image_folder = "./frontend/imagens"
     image_files = os.listdir(image_folder)
     image_files.sort(key=lambda f: int(f.split("_")[1].split(".")[0]))
     new_page = new_doc.new_page(width=page.rect.width, height=page.rect.height)  # Criar uma nova página no novo documento
@@ -31,3 +31,4 @@ for page_num in range(len(doc)):
             break
 
 new_doc.save("genesis_gerado.pdf", garbage=4, deflate=True, clean=True)  # Salvar o novo documento PDF limpo
+
